@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Монитор фильтра воды</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f6f9;
+      color: #222;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      padding: 16px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 26px;
+      margin-bottom: 5px;
+    }
+
+    .device {
+      text-align: center;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+
+    .title {
+      font-size: 15px;
+      color: #666;
+    }
+
+    .value {
+      font-size: 30px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    .unit {
+      font-size: 15px;
+      font-weight: normal;
+      color: #777;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 16px;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+
+    .online {
+      color: green;
+      font-weight: bold;
+    }
+
+    .offline {
+      color: red;
+      font-weight: bold;
+    }
+
+    .time {
+      color: #666;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 550px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>Монитор фильтра воды</h1>
+
+  <div class="device">
+    FILTER-697090
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="title">Давление ВХОД</div>
+      <div class="value">
+        <span id="pressureIn">--</span>
+        <span class="unit">bar</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">Давление ВЫХОД</div>
+      <div class="value">
+        <span id="pressureOut">--</span>
+        <span class="unit">bar</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">Расход ВХОД</div>
+      <div class="value">
+        <span id="flowIn">--</span>
+        <span class="unit">L/min</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">Расход ВЫХОД</div>
+      <div class="value">
+        <span id="flowOut">--</span>
+        <span class="unit">L/min</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">Качество воды (TDS)</div>
+      <div class="value">
+        <span id="tds">--</span>
+        <span class="unit">ppm</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">Температура воды</div>
+      <div class="value">
+        <span id="temperature">--</span>
+        <span class="unit">°C</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="status">
+
+    <div>
+      Связь:
+      <span id="connection" class="offline">
+        ОЖИДАНИЕ
+      </span>
+    </div>
+
+    <div class="time">
+      Последнее обновление:
+      <span id="lastUpdate">--</span>
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+// ============================================================
+// НАСТРОЙКИ THINGSPEAK
+// ============================================================
+
+const CHANNEL_ID = "3484465";
+
+// ВСТАВЬ СЮДА READ API KEY,
+// НЕ WRITE API KEY
+const READ_API_KEY = "2BQF4I7ZXAF4BLAF";
+
+
+// ============================================================
+// ЧТЕНИЕ ПОСЛЕДНЕЙ ЗАПИСИ
+// ============================================================
+
+async function updateData() {
+
+  const url =
+    `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json`
+    + `?api_key=${READ_API_KEY}&results=1`;
+
+  try {
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    if (!data.feeds || data.feeds.length === 0) {
+      throw new Error("Нет данных");
+    }
+
+    const feed = data.feeds[0];
+
+
+    // Field 1
+    document.getElementById("pressureIn").textContent =
+      feed.field1 ?? "--";
+
+
+    // Field 2
+    document.getElementById("pressureOut").textContent =
+      feed.field2 ?? "--";
+
+
+    // Field 3
+    document.getElementById("flowIn").textContent =
+      feed.field3 ?? "--";
+
+
+    // Field 4
+    document.getElementById("flowOut").textContent =
+      feed.field4 ?? "--";
+
+
+    // Field 5
+    document.getElementById("tds").textContent =
+      feed.field5 ?? "--";
+
+
+    // Field 6
+    document.getElementById("temperature").textContent =
+      feed.field6 ?? "--";
+
+
+    // Время ThingSpeak
+    const ts = new Date(feed.created_at);
+
+    document.getElementById("lastUpdate").textContent =
+      ts.toLocaleString();
+
+
+    document.getElementById("connection").textContent =
+      "ОНЛАЙН";
+
+    document.getElementById("connection").className =
+      "online";
+
+  }
+
+  catch (error) {
+
+    console.log(error);
+
+    document.getElementById("connection").textContent =
+      "НЕТ СВЯЗИ";
+
+    document.getElementById("connection").className =
+      "offline";
+  }
+}
+
+
+// Первый запрос
+updateData();
+
+
+// Обновление каждые 20 секунд
+setInterval(
+  updateData,
+  20000
+);
+
+</script>
+
+</body>
+</html>
